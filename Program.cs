@@ -1,14 +1,21 @@
 using CustomMiddleware;
 using CustomMiddleware.Middleware;
 using Serilog;
+using Serilog.Events;
 
+var builder = WebApplication.CreateBuilder(args);
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .CreateLogger();
+    .WriteTo.Seq(builder.Configuration.GetConnectionString("Seq") ?? 
+    throw new ArgumentNullException("Seq"))
+    .MinimumLevel.Override("Microsoft.AspNetCore.Hosting", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Mvc", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Routing", LogEventLevel.Warning)
+    .CreateBootstrapLogger();
 
 Log.Information("Starting web application");
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSerilog();
+
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -18,7 +25,18 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IMessageWriter, LogMessageWriter>();
 
+builder.Services.AddSerilog((services, lc) => lc
+    .ReadFrom.Configuration(builder.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Seq(builder.Configuration.GetConnectionString("Seq") 
+                ?? throw new ArgumentNullException("Seq"))
+    .WriteTo.Console());
+
 var app = builder.Build();
+
+app.UseSerilogRequestLogging(); 
+
 app.UseExceptionMiddleware();
 
 // Configure the HTTP request pipeline.
