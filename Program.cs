@@ -1,8 +1,14 @@
 using CustomMiddleware;
 using CustomMiddleware.Middleware;
+using Serilog;
 
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
+
+Log.Information("Starting web application");
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Services.AddSerilog();
 // Add services to the container.
 
 builder.Services.AddControllers();
