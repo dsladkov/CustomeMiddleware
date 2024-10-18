@@ -4,16 +4,20 @@ public class ExceptionMiddleware
 {
   private readonly RequestDelegate _next;
   private readonly ILogger<ExceptionMiddleware> _logger;
-  public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+    private readonly IMessageWriter _writer;
+
+    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IMessageWriter writer)
   {
     _next = next;
     _logger = logger;
+    _writer = writer;
   }
 
   public async Task InvokeAsync (HttpContext context)
   {
     try
     {
+      _writer.Write($"Got http context at {DateTime.Now}");
       await _next.Invoke(context);
     }
     catch (Exception ex)
